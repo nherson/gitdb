@@ -1,0 +1,164 @@
+#!/bin/bash
+. gitdb.conf
+echo "Fetching DB from: $REPO_LOCATION"
+echo "Storing remote DB into: $LOCAL_LOCATION"
+
+# setup
+cd $LOCAL_LOCATION
+git clone $REPO_LOCATION gitdb-repo
+cd gitdb-repo
+# from here on out, everything happens in this
+# directory that we have entered
+
+
+commit() {
+  git add -A
+  git commit -m "a commit to the db"
+  if git pull; then
+    if git push origin master; then
+      return 0
+    else
+      return 1
+    fi
+  fi
+  return 1
+}
+
+# Creates a table, given a name for the table
+# and the field names for the table
+create_table() {
+  table_name=$1
+  field_names=$2
+  # put the field names at the top of the table file
+  echo $field_names >> $table_name
+}
+
+insert_record() {
+  record=$2
+  table_name=$1
+  if [[ ! -f "$table_name" ]]; then
+    echo "Table '$table_name' does not exist"
+    return 1
+  fi
+  echo $record >> $table_name
+}
+
+read_records() {
+  table_name=$1
+  cat $table_name
+}
+
+drop_table() {
+  table_name=$1
+  if [[ ! -f "$table_name" ]]; then
+    echo "Table '$table_name' does not exist"
+    return 1
+  fi
+  rm $table
+}
+
+delete_records() {
+  table_name=$1
+  record=$2
+  if [[ ! -f "$table_name" ]]; then
+    echo "Table '$table_name' does not exist"
+    return 1
+  fi
+  sed -i "/$record/d" $table_name
+}
+
+display_schema() {
+  echo "TABLE: FIELD,NAMES (comma separated)"
+  for table in $(find * -maxdepth 1 -type f -print); do
+    echo -n "$table: "
+    echo $(cat $table | head -n 1)
+  done
+}
+
+cleanup() {
+  rm -rf $LOCAL_LOCATION/gitdb-repo
+}
+
+main() {
+  echo "Welcome to GitDB"
+  while true; do
+    #main input loop    
+    echo -n "GitDB> "
+    read input
+    execute_command $input
+  done
+}
+
+execute_command() {
+  input=$*
+  arg=$(echo $input | cut -f1 -d' ')
+  case $arg in
+    create)
+      while : ; do
+        git pull
+        if ! create_table $(echo $input | cut -f2 -d' ') $(echo $input | cut -f3 -d' '); then
+          break
+        fi
+        ! commit || git reset --hard && break
+      done
+      ;;
+    read)
+      git pull
+      read_records $(echo $input | cut -f2 -d' ')
+      ;;
+    insert)
+      table=$(echo $input | cut -f2 -d' ')
+      record=$(echo $input | cut -f3 -d' ')
+      git pull
+      while : ; do
+        git pull
+        if ! insert_record $table $record; then
+          break
+        fi
+        if commit; then
+          break
+        else
+          git reset --hard origin/master
+        fi
+      done
+      ;;
+    drop)
+      table=$(echo $input | cut -f2 -d' ')
+      while : ; do
+        git pull
+        if ! drop_table $table; then
+          break
+        fi
+        if commit; then
+          break
+        else
+          git reset --hard origin/master
+        fi
+      done
+      ;;
+    delete)
+      table=$(echo $input | cut -f2 -d' ')
+      record=$(echo $input | cut -f3 -d' ')
+      while : ; do
+        git pull
+        if ! delete_records $table $record; then
+          break
+        fi
+        if commit; then
+          break
+        else
+          git reset --hard origin/master
+        fi
+      done
+      ;;
+    schema)
+      display_schema
+      ;;
+    quit)
+      cleanup
+      exit 0
+      ;;
+  esac
+}
+
+main
