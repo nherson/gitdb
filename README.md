@@ -6,11 +6,13 @@ The power of UNIX, bash, and git combine to create a rudimentary DBMS.
 What is GitDB?
 --------------
 Any functional SQL-ish DBMS needs a few things:
+
 1. Code to handle disk and cache management
 2. Logic to stream records through a query plan
 3. A means by which to support concurrent access to tables
 
 What does a standard Linux installation give us?
+
 1. An Operating System (basic disk and cache management)
 2. Some sweet UNIX piping possibilities (basic streaming)
 3. Git (concurrent access control)
