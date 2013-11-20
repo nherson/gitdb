@@ -1,15 +1,28 @@
 #!/bin/bash
-. gitdb.conf
-echo "Fetching DB from: $REPO_LOCATION"
-echo "Storing remote DB into: $LOCAL_LOCATION"
+BIN_PATH=$(dirname $0)
+LIB_PATH=$BIN_PATH/../lib
+ETC_PATH=$BIN_PATH/../etc
 
-# setup
-cd $LOCAL_LOCATION
-git clone $REPO_LOCATION gitdb-repo
-cd gitdb-repo
-# from here on out, everything happens in this
-# directory that we have entered
-
+# Things done here:
+#   0. Source the config
+#   1. Source the needed functions from the library
+#   2. Clone the repo containing the DB
+#   3. Move execution into the working directory of the DB (for ease of coding)
+setup() {
+  echo "Starting GitDB..."
+  echo -n "Loading configuration..."
+  . $ROOT/../etc/gitdb.conf
+  echo "Done."
+  echo -n "Sourcing libraries..."
+  for lib in $(find ../lib -maxdepth 1 -mindepth 1); do
+    . $lib
+  done
+  echo "Done."
+  echo -n "Cloning the DB repo into $LOCAL_LOCATION"
+  cd $LOCAL_LOCATION
+  git clone $REPO_LOCATION gitdb-repo
+  cd gitdb-repo
+}
 
 commit() {
   git add -A
@@ -22,49 +35,6 @@ commit() {
     fi
   fi
   return 1
-}
-
-# Creates a table, given a name for the table
-# and the field names for the table
-create_table() {
-  table_name=$1
-  field_names=$2
-  # put the field names at the top of the table file
-  echo $field_names >> $table_name
-}
-
-insert_record() {
-  record=$2
-  table_name=$1
-  if [[ ! -f "$table_name" ]]; then
-    echo "Table '$table_name' does not exist"
-    return 1
-  fi
-  echo $record >> $table_name
-}
-
-read_records() {
-  table_name=$1
-  cat $table_name
-}
-
-drop_table() {
-  table_name=$1
-  if [[ ! -f "$table_name" ]]; then
-    echo "Table '$table_name' does not exist"
-    return 1
-  fi
-  rm $table
-}
-
-delete_records() {
-  table_name=$1
-  record=$2
-  if [[ ! -f "$table_name" ]]; then
-    echo "Table '$table_name' does not exist"
-    return 1
-  fi
-  sed -i "/$record/d" $table_name
 }
 
 display_schema() {
@@ -80,18 +50,22 @@ cleanup() {
 }
 
 main() {
+  setup
   echo "Welcome to GitDB"
   while true; do
     #main input loop    
     echo -n "GitDB> "
     read input
+    if [ "$input" = "quit" ]; then
+      break
+    fi
     execute_command $input
   done
+  cleanup
 }
 
 execute_command() {
-  input=$*
-  arg=$(echo $input | cut -f1 -d' ')
+  action=$*
   case $arg in
     create)
       while : ; do
@@ -164,4 +138,5 @@ execute_command() {
   esac
 }
 
+# start it all up
 main
