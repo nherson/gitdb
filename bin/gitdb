@@ -158,6 +158,9 @@ execute_command() {
       cleanup
       exit 0
       ;;
+    *)
+      echo "Unknown action: $arg"
+      ;;
   esac
 }
 
