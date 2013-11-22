@@ -3,6 +3,7 @@
 project() {
   records=$(< /dev/stdin)
   field_nums=$(echo $* | tr ' ' ',')
+  IFS=' '
   echo $records | while read record; do
     echo $(echo $record | cut -f$field_nums -d',')
   done

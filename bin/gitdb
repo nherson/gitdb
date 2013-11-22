@@ -11,12 +11,11 @@ ETC_PATH=$BIN_PATH/../etc
 setup() {
   echo "Starting GitDB..."
   echo -n "Loading configuration..."
-  . $ROOT/../etc/gitdb.conf
-  echo "Done."
+  . $ETC_PATH/gitdb.conf
   echo -n "Sourcing libraries..."
-  for lib in $(find ../lib -maxdepth 1 -mindepth 1); do
-    . $lib
-  done
+  while read module; do
+    . $LIB_PATH/$module
+  done < $ETC_PATH/modules.conf
   echo "Done."
   echo -n "Cloning the DB repo into $LOCAL_LOCATION"
   cd $LOCAL_LOCATION
@@ -37,14 +36,6 @@ commit() {
   return 1
 }
 
-display_schema() {
-  echo "TABLE: FIELD,NAMES (comma separated)"
-  for table in $(find * -maxdepth 1 -type f -print); do
-    echo -n "$table: "
-    echo $(cat $table | head -n 1)
-  done
-}
-
 cleanup() {
   rm -rf $LOCAL_LOCATION/gitdb-repo
 }
@@ -52,90 +43,30 @@ cleanup() {
 main() {
   setup
   echo "Welcome to GitDB"
+  # Primary input loop
   while true; do
-    #main input loop    
     echo -n "GitDB> "
-    read input
-    if [ "$input" = "quit" ]; then
+    read query
+    if [ "$query" = "quit" ]; then
       break
     fi
-    execute_command $input
+    execute_command $query
   done
   cleanup
 }
 
 execute_command() {
-  action=$*
-  case $arg in
-    create)
-      while : ; do
-        git pull
-        if ! create_table $(echo $input | cut -f2 -d' ') $(echo $input | cut -f3 -d' '); then
-          break
-        fi
-        ! commit || git reset --hard && break
-      done
-      ;;
-    read)
-      git pull
-      read_records $(echo $input | cut -f2 -d' ')
-      ;;
-    insert)
-      table=$(echo $input | cut -f2 -d' ')
-      record=$(echo $input | cut -f3 -d' ')
-      git pull
-      while : ; do
-        git pull
-        if ! insert_record $table $record; then
-          break
-        fi
-        if commit; then
-          break
-        else
-          git reset --hard origin/master
-        fi
-      done
-      ;;
-    drop)
-      table=$(echo $input | cut -f2 -d' ')
-      while : ; do
-        git pull
-        if ! drop_table $table; then
-          break
-        fi
-        if commit; then
-          break
-        else
-          git reset --hard origin/master
-        fi
-      done
-      ;;
-    delete)
-      table=$(echo $input | cut -f2 -d' ')
-      record=$(echo $input | cut -f3 -d' ')
-      while : ; do
-        git pull
-        if ! delete_records $table $record; then
-          break
-        fi
-        if commit; then
-          break
-        else
-          git reset --hard origin/master
-        fi
-      done
-      ;;
-    schema)
-      display_schema
-      ;;
-    quit)
-      cleanup
-      exit 0
-      ;;
-    *)
-      echo "Unknown action: $arg"
-      ;;
-  esac
+  query=$*
+  while : ; do
+    git pull
+    echo
+    echo "Executing..."
+    if ! eval $query; then
+      break
+    fi
+    echo
+    ! commit || git reset --hard && break
+  done
 }
 
 # start it all up

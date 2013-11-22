@@ -5,8 +5,11 @@
 create_table() {
   table_name=$1
   field_names=$2
-  if [ -f "$table_name" ]; then
-    echo there should be a table_already_exists_error
+  if table_exists $table_name; then
+    return 1
+  fi
+  if invalid_table_name $table_name; then
+    return 1
   fi
   echo $field_names > $table_name
   echo ======== >> $table_name
@@ -17,8 +20,8 @@ create_table() {
 #   $1 => The name of the table to drop
 drop_table() {
   table_name=$1
-  if [[ ! -f "$table_name" ]]; then
-    echo there should be a table_does_not_exist_error
+  if not_table_exists $table_name; then
+    return 1
   fi
   rm $table_name
 }
@@ -30,8 +33,8 @@ drop_table() {
 insert_record() {
   record=$2
   table_name=$1
-  if [[ ! -f "$table_name" ]]; then
-    echo there should be a table_does_not_exist_error
+  if not_table_exists $table_name; then
+    return 1
   fi
   echo THERE SHOULD BE A RECORD SANITY CHECK
   echo $record >> $table_name
@@ -44,8 +47,8 @@ insert_record() {
 delete_record() {
   record=$2
   table_name=$1
-  if [[ ! -f "$table_name" ]]; then
-    echo there should be a table_does_not_exist_error
+  if not_table_exists $table_name; then
+    return 1
   fi
   sed -i "/$record/d" $table_name
 }
@@ -56,24 +59,7 @@ schema() {
   echo "TABLE: FIELD NAMES (comma separated)"
   echo '------------------------------------'
   for table in $(find * -maxdepth 1 -type f -print); do
-    echo -n "$table: $(cat $table | head -n 1)"
+    echo "$table: $(cat $table | head -n 1)"
   done
 }
 
-table_exists() {
-  table=$1
-  if [ -f $table ]; then
-    return 0
-  else
-    return 1
-  fi
-}
-
-not_table_exists() {
-  table=$1
-  if [ -f $table ]; then
-    return 1
-  else
-    return 0
-  fi
-}

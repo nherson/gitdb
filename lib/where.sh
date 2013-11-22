@@ -7,9 +7,10 @@ where() {
   lines=$(< /dev/stdin)
   field_num=$1
   val=$2
+  IFS=' '
   echo $lines | while read line; do
     field=$(echo $line | cut -f${field_num} -d',')
-    if [ "$field" = "$val" ]; then
+    if [[ "$field" == "$val" ]]; then
       echo $line
     fi
   done
