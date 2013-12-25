@@ -1,7 +1,7 @@
 # Throws an error if the table already exists
 table_exists() {
   table=$1
-  if [ -f $table ]; then
+  if cat schema | cut -f1 -d":" | grep -q "$table"; then
     echo "ERROR: table $table already exists"
     return 0
   else
@@ -12,11 +12,11 @@ table_exists() {
 # Checks that the given table (file) does not exist
 not_table_exists() {
   table=$1
-  if [ ! -f $table ]; then
+  if cat schema | cut -f1 -d":" | grep -q "$table"; then
+    return 1
+  else
     echo "ERROR: table $table does not exist"
     return 0
-  else
-    return 1
   fi
 }
 
@@ -51,11 +51,10 @@ invalid_table_name() {
     return 0
   fi
   # no hidden-file table names
-  if [[ ! "$table_name" == \.* ]]; then
-    echo "Tables cannot start with a dot (.), else they'd be hidden files"
+  if ! echo $table | grep '^[-_A-Za-z0-9]*$'; then
+    echo "Invalid characters in table name. Please use alphanumeric, dashes, and underscores."
     return 0
   fi
   return 1
 }
-
 

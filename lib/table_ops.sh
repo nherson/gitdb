@@ -11,8 +11,8 @@ create_table() {
   if invalid_table_name $table_name; then
     return 1
   fi
-  echo $field_names > $table_name
-  echo ======== >> $table_name
+  echo "$table_name:$field_names" >> schema
+  touch $table_name
 }
 
 # Drops the specified table (removes the file)
@@ -24,6 +24,7 @@ drop_table() {
     return 1
   fi
   rm $table_name
+  sed "/$table_name/d" schema > schema
 }
 
 # Inserts the given record into the specified table
