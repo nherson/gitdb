@@ -1,7 +1,7 @@
 GitDB
 =====
 
-The power of UNIX, bash, and git combine to create a rudimentary DBMS.
+The power of UNIX, bash, and git combine to create a (very) rudimentary DBMS.
 
 What is GitDB?
 --------------
@@ -34,4 +34,4 @@ What is GitDB NOT?
 
 What is the State of GitDB?
 ---------------------------
-Well as of now, it is a work in progress. Time gets placed towards building it when available. It's a slow process.
+It was a fun PoC, but it's dead at this point :)
